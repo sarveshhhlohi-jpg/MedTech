@@ -1,6 +1,6 @@
-# MEDIGUARD X
+# MEDTECH
 
-MEDIGUARD X is an AI Health + Insurance Safety OS prototype for structured patient intake, clinical safety review, and clinician-ready handoff.
+MEDTECH is an AI Health + Insurance Safety OS prototype for structured patient intake, clinical safety review, and clinician-ready handoff.
 
 It is built for a focused hackathon workflow: capture a patient's story, turn it into a structured record, surface allergy and medication risks deterministically, and produce a concise health timeline and doctor summary.
 
