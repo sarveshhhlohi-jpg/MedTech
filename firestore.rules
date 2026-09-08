@@ -1,0 +1,186 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedInAs(userId) {
+      return request.auth != null && request.auth.uid == userId;
+    }
+
+    function validPatient() {
+      return request.resource.data.keys().hasOnly([
+        'name',
+        'age',
+        'gender',
+        'symptoms',
+        'priority',
+        'patientUid',
+        'chiefComplaint',
+        'symptomDuration',
+        'medicalHistory',
+        'allergies',
+        'medications',
+        'bloodPressure',
+        'heartRate',
+        'temperature',
+        'spo2',
+        'additionalNotes',
+        'createdAt',
+        'visits'
+      ])
+      && request.resource.data.name is string
+      && request.resource.data.name.size() > 0
+      && request.resource.data.name.size() <= 200
+      && request.resource.data.age is int
+      && request.resource.data.age >= 0
+      && request.resource.data.age <= 130
+      && request.resource.data.gender is string
+      && request.resource.data.patientUid is string
+      && request.resource.data.patientUid.size() <= 128
+      && request.resource.data.symptoms is string
+      && request.resource.data.symptoms.size() <= 5000
+      && request.resource.data.priority in ['Routine', 'Review', 'Urgent']
+      && request.resource.data.chiefComplaint is string
+      && request.resource.data.chiefComplaint.size() <= 1000
+      && request.resource.data.symptomDuration is string
+      && request.resource.data.symptomDuration.size() <= 200
+      && request.resource.data.medicalHistory is string
+      && request.resource.data.medicalHistory.size() <= 3000
+      && request.resource.data.allergies is string
+      && request.resource.data.allergies.size() <= 2000
+      && request.resource.data.medications is string
+      && request.resource.data.medications.size() <= 2000
+      && request.resource.data.bloodPressure is string
+      && request.resource.data.bloodPressure.size() <= 100
+      && request.resource.data.heartRate is string
+      && request.resource.data.heartRate.size() <= 100
+      && request.resource.data.temperature is string
+      && request.resource.data.temperature.size() <= 100
+      && request.resource.data.spo2 is string
+      && request.resource.data.spo2.size() <= 100
+      && request.resource.data.additionalNotes is string
+      && request.resource.data.additionalNotes.size() <= 5000
+      && request.resource.data.createdAt is timestamp
+      && request.resource.data.visits is list
+      && request.resource.data.visits.size() <= 100;
+        }
+
+    function validReminder() {
+      return request.resource.data.keys().hasOnly([
+        'id',
+        'patientId',
+        'patientUid',
+        'doctorId',
+        'doctorName',
+        'title',
+        'medication',
+        'instructions',
+        'frequency',
+        'time',
+        'startDate',
+        'endDate',
+        'beforeAfterFood',
+        'status',
+        'createdAt',
+        'recordId',
+        'followUpDate',
+        'completedAt'
+      ])
+      && request.resource.data.id is string
+      && request.resource.data.patientId is string
+      && request.resource.data.patientId.size() > 0
+      && request.resource.data.patientUid is string
+      && request.resource.data.patientUid.size() > 0
+      && request.resource.data.doctorId is string
+      && request.resource.data.doctorId == request.auth.uid
+      && request.resource.data.doctorName is string
+      && request.resource.data.title is string
+      && request.resource.data.medication is string
+      && request.resource.data.instructions is string
+      && request.resource.data.frequency is string
+      && request.resource.data.time is string
+      && request.resource.data.startDate is timestamp
+      && request.resource.data.endDate is timestamp
+      && request.resource.data.beforeAfterFood is string
+      && request.resource.data.status in ['active', 'completed', 'cancelled']
+      && request.resource.data.createdAt is timestamp
+      && request.resource.data.recordId is string
+      && (request.resource.data.followUpDate == null || request.resource.data.followUpDate is timestamp)
+      && (request.resource.data.completedAt == null || request.resource.data.completedAt is timestamp);
+    }
+
+    function validUserProfile() {
+      return request.resource.data.keys().hasOnly([
+        'uid',
+        'email',
+        'fullName',
+        'role',
+        'phoneNumber',
+        'qualification',
+        'specialization',
+        'medicalRegistrationNumber',
+        'yearsOfExperience',
+        'clinicName',
+        'clinicAddress',
+        'createdAt'
+      ])
+      && request.resource.data.uid == request.auth.uid
+      && request.resource.data.email is string
+      && request.resource.data.fullName is string
+      && request.resource.data.role in ['doctor', 'patient']
+      && request.resource.data.phoneNumber is string
+      && request.resource.data.qualification is string
+      && request.resource.data.specialization is string
+      && request.resource.data.medicalRegistrationNumber is string
+      && request.resource.data.yearsOfExperience is string
+      && request.resource.data.clinicName is string
+      && request.resource.data.clinicAddress is string
+      && request.resource.data.createdAt is timestamp;
+    }
+
+    function validPatientReminderCompletion() {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+        'status',
+        'completedAt'
+      ])
+      && request.resource.data.status == 'completed'
+      && request.resource.data.completedAt is timestamp;
+    }
+
+    match /users/{userId} {
+      allow read: if signedInAs(userId);
+      allow create, update: if signedInAs(userId) && validUserProfile();
+      allow delete: if signedInAs(userId);
+    }
+
+    match /users/{userId}/patients/{patientId} {
+      allow read: if signedInAs(userId) || (
+        request.auth != null && resource.data.patientUid == request.auth.uid
+      );
+      allow create: if signedInAs(userId) && validPatient();
+      allow update: if signedInAs(userId) && validPatient();
+      allow delete: if signedInAs(userId);
+    }
+
+    match /reminders/{reminderId} {
+      allow read: if request.auth != null && (
+        resource.data.doctorId == request.auth.uid ||
+        resource.data.patientId == request.auth.uid ||
+        resource.data.patientUid == request.auth.uid
+      );
+      allow create: if request.auth != null && validReminder();
+      allow update: if request.auth != null && (
+        (resource.data.doctorId == request.auth.uid && validReminder()) ||
+        (resource.data.patientUid == request.auth.uid && validPatientReminderCompletion())
+      );
+      allow delete: if request.auth != null && (
+        resource.data.doctorId == request.auth.uid ||
+        resource.data.patientId == request.auth.uid ||
+        resource.data.patientUid == request.auth.uid
+      );
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

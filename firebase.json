@@ -1,0 +1,24 @@
+{
+	"firestore": {
+		"rules": "firestore.rules"
+	},
+	"flutter": {
+		"platforms": {
+			"android": {
+				"default": {
+					"projectId": "medtech-fe8ee",
+					"appId": "1:549983638208:android:dc8d604c697037a9c35325",
+					"fileOutput": "android/app/google-services.json"
+				}
+			},
+			"dart": {
+				"lib/firebase_options.dart": {
+					"projectId": "medtech-fe8ee",
+					"configurations": {
+						"android": "1:549983638208:android:dc8d604c697037a9c35325"
+					}
+				}
+			}
+		}
+	}
+}
